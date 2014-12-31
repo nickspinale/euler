@@ -38,31 +38,32 @@ limited _ _ = False
 prepare :: [Int] -> [[Int]]
 prepare = map $ enumFromTo 0
 
-singles :: [Int] -> [(Int, [Int])]
+--------------------------------------
+
+combos :: [[a]] -> [[[a]]]
+combos [] = return [[]]
+combos xs = do
+    (old, new) <- map unzip $ f xs
+    newer <- combos new
+    return (old : newer)
+
+singles :: [a] -> [(a, [a])]
 singles = singles' []
 
 singles' :: [a] -> [a] -> [(a, [a])]
-singles' _ [] = []
-singles' past (present:future) = (present, past ++ future) : singles' (present:past) future
+singles' _ [] = [Nothing]
+singles' past (present:future) = Just (present, past ++ future) : singles' (present:past) future
 
-f :: [[Int]] -> [(Int, [Int])]
-f [] = []
+f :: [[a]] -> [[(a, [a])]]
+f [] = return []
 f (x:xs) = do
     parted <- singles x
     rest <- f xs
     return (parted : rest)
 
--- given a list of counts, gives 
--- combos :: [Int] -> [[[Int]]]
-combos xs = do
-    (useds, lefts) <- f xs
-    rest <- case combos lefts
-            of   [] -> return []
-                 c  -> c
-    return (useds : rest)
-
 -- split = map unzip . f . prepare
-test = map unzip . combos . prepare $ [2, 2, 2]
+l :: [Int]
+l = [2, 2, 2]
 
 
 
