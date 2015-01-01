@@ -1,6 +1,7 @@
-import Data.List
+{-# LANGUAGE TupleSections #-}
 
-main = return ()
+import Data.List
+import Control.Monad.State.Lazy
 
 primes = seive [2..]
 
@@ -29,51 +30,147 @@ groupify (x:xs) = count x xs : groupify (filter (/= x) xs)
 count _ [] = 1
 count n (x:xs) = (if n == x then 1 else 0) + count n xs
 
--- is list no larger than n
-limited :: Int -> [a] -> Bool
-limited 0 _ = True
-limited n (x:xs) = limited (n - 1) xs
-limited _ _ = False
-
-prepare :: [Int] -> [[Int]]
-prepare = map $ enumFromTo 0
-
 --------------------------------------
 
-combos :: [[a]] -> [[[a]]]
-combos [] = return [[]]
-combos xs = do
-    (old, new) <- map unzip $ f xs
-    newer <- combos new
-    return (old : newer)
+choose :: Int -> [a] -> [[a]]
+choose n xs = choose' (length xs) n xs
 
-singles :: [a] -> [(a, [a])]
-singles = singles' []
+choose' :: Int -> Int -> [a] -> [[a]]
+choose' _ 0 _ = return []
+choose' len n (x:xs) =
+    liftM (x :) (choose' (len - 1) (n - 1) xs)
+    ++ if len <= n
+       then []
+       else choose' (len - 1) n xs
 
-singles' :: [a] -> [a] -> [(a, [a])]
-singles' _ [] = [Nothing]
-singles' past (present:future) = Just (present, past ++ future) : singles' (present:past) future
+-- W . toSnd (!)
+wfact :: Int -> Int -> Int
+wfact fact n = length $ filter check $ choose n factors
+  where
+    reduced :: [Int]
+    reduced = reduceF fact
+    factors :: [[Int]]
+    factors = mapM (enumFromTo 0) reduced
+    check :: [[Int]] -> Bool
+    check = all (== 0) . foldl (zipWith (-)) reduced
 
-f :: [[a]] -> [[(a, [a])]]
-f [] = return []
-f (x:xs) = do
-    parted <- singles x
-    rest <- f xs
-    return (parted : rest)
+main = print $ wfact 100 10
 
--- split = map unzip . f . prepare
-l :: [Int]
-l = [2, 2, 2]
+--------------------------------------
+-- WIERD StateT _ [] IDEAS
+--------------------------------------
+-- lazy length check
+--lazylen :: Int -> [a] -> Bool
+--lazylen 0 [] = True
+--lazylen _ [] = False
+--lazylen n (x:xs) = lazylen (n - 1) xs
 
+--singles :: [a] -> [(a, [a])]
+--singles = singles' []
 
+--singles' _ [] = []
+--singles' past (present:future) = (present, past ++ future) : singles' (present:past) future
 
+----allfactors :: [Int] -> [[Int]]
+--allfactors = singles . mapM (enumFromTo 0)
 
--- split :: [Int] -> [([Int], [Int])]
--- split = map unzip . tail . split'
+--go 1 current _ = if all (== 0) current then return [current] else []
+--go togo current bench = do
+--    (this, others) <- bench
+--    let new = zipWith (-) current this
+--    if any (< 0) new
+--     then []
+--     else do
+--        rest <- go (togo - 1) new $ singles others
+--        return (this : rest)
 
--- split' :: [Int] -> [[(Int, Int)]]
--- split' [] = [[]]
--- split' (x:xs) = do
---     used <- [0..x]
---     rest <- split' xs
---     return ((used, x - used) : rest)
+--t = groupify $ reduce 144
+--test = go 4 t (allfactors t)
+--------------------------------------
+
+--subj :: ([Int], [[Int]])
+--subj = ([3, 2, 4], [])
+
+----strip :: StateT ([Int], [[Int]]) [] [Int]
+----strip used left = case 
+----    [ (current, (zipWith (-) left current, current : used))
+----    | current <- mapM (enumFromTo 0) left
+----    , not $ current `elem` used
+----    ]
+
+--strip :: StateT ([Int], [[Int]]) [] [Int]
+--strip = StateT $ \(left, used) ->
+--    [ (current, (zipWith (-) left current, current : used))
+--    | current <- mapM (enumFromTo 0) left
+--    , not $ current `elem` used
+--    ]
+
+--go :: StateT ([Int], [[Int]]) [] [[Int]]
+--go = do
+--    factor <- strip
+--    (left, used) <- get
+--    if all (== 0) left && elem left used
+--      then return [factor]
+--      else do
+--        others <- go
+--        return (factor : others)
+
+--test = filter (lazylen 4) $ evalStateT go off
+
+--off = (groupify $ reduce 144, [])
+--------------------------------------
+
+--nexts :: StateT (Int, [Int]) [] Int
+--nexts = StateT $ \(curr, illegals) -> [ (new, (curr - new, new : illegals))
+--                                      | new <- [0..curr]
+--                                      , not $ elem new illegals
+--                                      ]
+
+            --prepare :: [Int] -> [] (Int, [Int])
+            --prepare = map (, [])
+
+--nexts :: StateT (Int, [Int]) [] Int
+--nexts = StateT $ \(curr, illegals) ->
+--    [ (new, (curr - new, new : illegals))
+--    | new <- [0..curr]
+--    , not $ elem new illegals
+--    ]
+
+      --nexts :: (Int, [Int]) -> [(Int, (Int, [Int]))]
+      --nexts (curr, illegals) =
+      --    [ (new, (curr - new, new : illegals))
+      --    | new <- [0..curr]
+      --    , not $ elem new illegals
+      --    ]
+
+      --take1 :: StateT [(Int, [Int])] [] [Int]
+      --take1 = StateT $ map unzip . mapM nexts
+
+      --takeAll :: StateT [(Int, [Int])] [] [[Int]]
+      --takeAll = do
+      --    st <- get
+      --    if all (null . nexts) st
+      --      then return []
+      --      else do one <- take1
+      --              rest <- takeAll
+      --              return (one : rest)
+
+      --test = evalStateT takeAll $ prepare [2, 4, 3]
+
+--take1 :: [(Int, [Int])] -> [] [(Int, [Int])]
+--take1 [] = return []
+--take1 (x:xs) = do
+--    first <- nexts x
+--    rest <- take1 xs
+--    return (first : rest)
+
+--combos :: [] (Int, [Int]) -> [[[(Int, [Int])]]]
+--combos [] = return []
+--combos xs = do
+--    one <- take1 xs
+--    others <- case combos one of
+--                [] -> return []
+--                c -> c
+--    return (one : others)
+
+--test = map length . combos . prepare . groupify . reduce
