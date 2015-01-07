@@ -1,7 +1,7 @@
 import Control.Monad
 
 main = do
-    input <- getContents
+    input <- readFile "011.txt"
     let grid = map (map (read :: String -> Int) . words) $ lines input
         f x y = (grid!!y)!!x
     print . maximum $  [ product $ liftM (     f x) [y..y+3] | x <- [0..19], y <- [0..16] ]

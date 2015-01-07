@@ -1,4 +1,4 @@
-main = getContents >>= (print . take 10 . read . sum . map (read :: String -> Integer) . lines)
+main = readFile "013.hs" >>= (print . take 10 . read . sum . map (read :: String -> Integer) . lines)
 
 -- TURNS OUT THEY MEANT THE FIRST 10 DIGITS FROM THE OTHER SIDE
 
