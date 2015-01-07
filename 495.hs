@@ -3,58 +3,45 @@
 import Data.List
 import Control.Monad.State.Lazy
 
-primes = seive [2..]
 
--- seive of erasthos
-seive (n:ns) = n : seive [ n' | n' <- ns, mod n' n > 0 ]
+factors n = map length . group . qsort $ concatMap (reduce $ sieve [2..]) [2..n]
 
--- order of each (anonymous) prime factorizatio of n!
-reduceF :: Int -> [Int]
-reduceF n = groupify $ concatMap reduce $ [2..n]
+sieve (x:xs) = x : sieve [ y | y <- xs, mod y x > 0 ]
 
--- prime factorization
-reduce :: Int -> [Int]
-reduce n = aux primes
-  where
-    aux :: [Int] -> [Int]
-    aux (x:xs) | n == x = [n]
-               | mod n x == 0 = x : reduce (div n x)
-               | otherwise = aux xs
+qsort [] = []
+qsort (x:xs) = qsort small ++ [x] ++ qsort big
+  where (small, big) = partition (< x) xs
 
--- count instances of (anonymous) elements in a list
-groupify :: Eq a => [a] -> [Int]
-groupify [] = []
-groupify (x:xs) = count x xs : groupify (filter (/= x) xs)
-
--- note extra 1 in first equation: this is because of its use above
-count _ [] = 1
-count n (x:xs) = (if n == x then 1 else 0) + count n xs
+reduce _ 1 = []
+reduce x@(p:ps) n = case mod n p
+                    of   0 -> p : reduce x (div n p)
+                         _ -> reduce ps n
 
 --------------------------------------
 
-choose :: Int -> [a] -> [[a]]
-choose n xs = choose' (length xs) n xs
+-- choose :: Int -> [a] -> [[a]]
+-- choose n xs = choose' (length xs) n xs
 
-choose' :: Int -> Int -> [a] -> [[a]]
-choose' _ 0 _ = return []
-choose' len n (x:xs) =
-    liftM (x :) (choose' (len - 1) (n - 1) xs)
-    ++ if len <= n
-       then []
-       else choose' (len - 1) n xs
+-- choose' :: Int -> Int -> [a] -> [[a]]
+-- choose' _ 0 _ = return []
+-- choose' len n (x:xs) =
+--     liftM (x :) (choose' (len - 1) (n - 1) xs)
+--     ++ if len <= n
+--        then []
+--        else choose' (len - 1) n xs
 
--- W . toSnd (!)
-wfact :: Int -> Int -> Int
-wfact fact n = length $ filter check $ choose n factors
-  where
-    reduced :: [Int]
-    reduced = reduceF fact
-    factors :: [[Int]]
-    factors = mapM (enumFromTo 0) reduced
-    check :: [[Int]] -> Bool
-    check = all (== 0) . foldl (zipWith (-)) reduced
+-- -- W . toSnd (!)
+-- wfact :: Int -> Int -> Int
+-- wfact fact n = length $ filter check $ choose n factors
+--   where
+--     reduced :: [Int]
+--     reduced = reduceF fact
+--     factors :: [[Int]]
+--     factors = mapM (enumFromTo 0) reduced
+--     check :: [[Int]] -> Bool
+--     check = all (== 0) . foldl (zipWith (-)) reduced
 
-main = print $ wfact 100 10
+-- main = print $ wfact 100 10
 
 --------------------------------------
 -- WIERD StateT _ [] IDEAS
