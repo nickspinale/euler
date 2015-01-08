@@ -1,10 +1,4 @@
-main = readFile "067.txt" >>= ( print
-                              . best
-                              . map (map (read :: String -> Int) . words)
-                              . lines
-                              )
+main = readFile "067.txt" >>= print . foldr1 f . map (map read . words) . lines
 
--- dynamic
-best (x:[]) = x
-best (x:xs) = zipWith (+) x $ zipWith max z ys
-  where z@(_:ys) = best xs
+f :: [Int] -> [Int] -> [Int]
+f x y = zipWith (+) x $ zipWith max y $ tail y
