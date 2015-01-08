@@ -3,9 +3,15 @@ import Control.Monad
 
 limit = 28123
 
-main = print . sum . (\\) [1..limit] . filter (<= limit) $ liftM2 (+) abundants abundants
+main = print $ sum ([1..limit] \\ good)
 
-abundants = [ n | n <- [1..limit], n < sum (factors n) ]
+good = [ low + high
+       | low  <- filter abundant [ 1 .. div limit 2 ]
+       , high <- filter abundant [ div limit 2 .. limit ]
+       , low + high <= limit
+       ]
+
+abundant n = n < sum (factors n)
 
 factors = init . foldl (liftM2 (*)) [1] . map (scanl (*) 1) . group . reduce [2..]
 
