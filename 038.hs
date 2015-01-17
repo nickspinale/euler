@@ -1,8 +1,9 @@
 import Data.List
 
-main = print $ find p $ concatMap groupings $ perms "987654321"
+main = print . find p . concatMap (map (map read) . init . groupings) $ perms "987654321"
 
-
+p :: [Int] -> Bool
+p (n:ns) = and (zipWith (==) ns $ tail (scanl1 (+) $ repeat n))
 
 groupings :: [a] -> [[[a]]]
 groupings [] = return []
