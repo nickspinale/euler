@@ -1,3 +1,2 @@
-*.exe
-*.o
-*.hi
+/incomplete/*
+!/incomplete/*.hs
