@@ -4,20 +4,20 @@ import Data.List
 import Control.Monad.State.Lazy
 
 
-factors n = map length . group . qsort $ concatMap (reduce $ sieve [2..]) [2..n]
-
-sieve (x:xs) = x : sieve [ y | y <- xs, mod y x > 0 ]
-
-qsort [] = []
-qsort (x:xs) = qsort small ++ [x] ++ qsort big
-  where (small, big) = partition (< x) xs
+factors n = map length . group . sort $ concatMap (reduce [2..]) [2..n]
 
 reduce _ 1 = []
-reduce x@(p:ps) n = case mod n p
-                    of   0 -> p : reduce x (div n p)
-                         _ -> reduce ps n
+reduce y@(x:xs) n = case mod n p of
+    0 -> p : reduce y (div n x)
+    _ -> reduce xs n
 
 --------------------------------------
+
+-- qsort [] = []
+-- qsort (x:xs) = qsort small ++ [x] ++ qsort big
+--   where (small, big) = partition (< x) xs
+
+----- ----- ----- 
 
 -- choose :: Int -> [a] -> [[a]]
 -- choose n xs = choose' (length xs) n xs
